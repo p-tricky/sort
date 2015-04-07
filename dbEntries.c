@@ -1,47 +1,75 @@
 #include "dbEntries.h"
 #include <stdlib.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <string.h>
+#include <stdio.h>
+#include "dbg.h"
 
+typedef int (*cmpfn) (const void*, const void*);
+
+int cmpfunc( dbEntry **entry1, dbEntry **entry2) {
+  if ( (*entry1)->index > (*entry2)->index) return 1;
+  else return -1;
+}
 
 dbEntries *dbEntries_init() {
   dbEntries *entries = malloc(sizeof(dbEntries));
-  entries->nextEntry = 0;
+  entries->entries = NULL;
+  entries->nextEntry = NULL;
   entries->numEntries= 0;
   return entries;
 }
 
 void dbEntries_destroy(dbEntries *self) {
   unsigned int entry = 0;
-  while (entry < self->numEntries) free(self->entries[entry]);
+  while (entry < self->numEntries) {
+    dbEntry_destroy(self->entries[entry]);
+    entry++;
+  }
+  free(self->entries);
   free(self);
 }
 
-void* Thread() {
-  char test_buf[] = "Hello,World\nFoo,Bar\n";
-  char *saveptr1, *saveptr2, *line, *token;
-  line = strtok_r(test_buf, "\n", &saveptr1);
-  fprintf(stdout, "%s\n", line);
-  token = strtok_r(line, ",", &saveptr2);
-  fprintf(stdout, "token: %s\n", token);
-  token = strtok_r(NULL, ",", &saveptr2);
-  fprintf(stdout, "token: %s\n", token);
-  return NULL;
+int add_entry(dbEntries *self) {
+  if ((self->numEntries % 100) == 0) {
+    self->entries = realloc(self->entries, (self->numEntries+100)*sizeof(dbEntry *));
+    check_mem(self->entries);
+  }
+  self->entries[(self->numEntries)++] = dbEntry_init();
+  return 0;
+
+error:
+  return -1;
+}
+
+int read_file(FILE *stream, dbEntries *self) {
+  char *line = NULL;
+  size_t bufsize = 0;
+  while (getline(&line, &bufsize, stream) > 0) {
+    add_entry(self);
+    self->nextEntry = self->entries[self->numEntries-1];
+    populateEntryFromLine(line, self->nextEntry);
+  }
+  free(line);
+  return 0;
+}
+
+void write_entries_to_file(FILE *output, dbEntries *self) {
+  for (unsigned int i=0; i<self->numEntries; i++) {
+    writeToFile(output, self->entries[i]);
+  }
+}
+
+void sort_entries(dbEntries *self) {
+  qsort((void *)self->entries, self->numEntries, sizeof(dbEntry *), (cmpfn)cmpfunc);
 }
 
 int main() {
-  pthread_t threadA, threadB; // need to name the thread
-  int rc;
-	if ( (rc = pthread_create(&threadA , NULL, Thread, NULL)) )
-      {fprintf(stdout,"ERROR; return pthread_create()" );
-         	exit(1); }
-	if ( (rc = pthread_create(&threadB , NULL, Thread, NULL)) )
-      {fprintf(stdout,"ERROR; return pthread_create()" );
-         	exit(1); }
-  pthread_join(threadA, NULL);
-  pthread_join(threadB, NULL);
-  exit(EXIT_SUCCESS);
+  FILE *data = fopen("./A4_ParallelSort/data/0", "r");
+  dbEntries *ents = dbEntries_init();
+  read_file(data, ents);
+  sort_entries(ents);
+  write_entries_to_file(stdout, ents);
+  fclose(data);
+  dbEntries_destroy(ents);
 }
 

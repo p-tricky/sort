@@ -1,5 +1,8 @@
-#include "apue.h"
 #include "dbEntry.h"
+#include <stdio.h>
+#include <string.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 dbEntry *dbEntry_init() {
   dbEntry *dbEnt = (dbEntry *)malloc(sizeof(dbEntry));
@@ -18,12 +21,39 @@ void dbEntry_destroy(dbEntry *self) {
   free(self);
 }
 
+void writeToFile(FILE *output, dbEntry *self) {
+  if (output != NULL) {
+    char *name = self->username;
+    char *pword = self->password;
+    char *btype = self->bloodtype;
+    char *domain = self->domain;
+    int idx = self->index;
+    char line[150];
+    sprintf(line, "%s,%s,%s,%s,%d\n", name, pword, btype, domain, idx);
+    fwrite(line, strlen(line), sizeof(char), output);
+  }
+}
+
+void populateEntryFromLine(char *line, dbEntry *self) {
+  self->username = strdup(strtok(line, ","));
+  self->password = strdup(strtok(NULL, ","));
+  self->bloodtype = strdup(strtok(NULL, ","));
+  self->domain = strdup(strtok(NULL, ","));
+  self->index = atoi(strtok(NULL, "\n"));
+}
+
+/*
 int main() {
   dbEntry *first = dbEntry_init();
   dbEntry *second = dbEntry_init();
-  first->username = strdup("phloftus");
-  first->password = strdup("swordfish");
+  char *line = NULL;
+  size_t bufsize = 0;
+  getline(&line, &bufsize, stdin);
+  populateEntryFromLine(line, first);
+  free(line);
+  writeToFile(stdout, first);
   dbEntry_destroy(first);
   dbEntry_destroy(second);
 }
+*/
 
