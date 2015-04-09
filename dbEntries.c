@@ -1,8 +1,9 @@
 #include "dbEntries.h"
+#include "dbg.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "dbg.h"
+#include <pthread.h>
 
 typedef int (*cmpfn) (const void*, const void*);
 
@@ -14,7 +15,7 @@ int cmpfunc( dbEntry **entry1, dbEntry **entry2) {
 dbEntries *dbEntries_init() {
   dbEntries *entries = malloc(sizeof(dbEntries));
   entries->entries = NULL;
-  entries->nextEntry = NULL;
+  entries->next = 0;
   entries->numEntries= 0;
   return entries;
 }
@@ -36,7 +37,6 @@ int add_entry(dbEntries *self) {
   }
   self->entries[(self->numEntries)++] = dbEntry_init();
   return 0;
-
 error:
   return -1;
 }
@@ -44,10 +44,10 @@ error:
 int read_file(FILE *stream, dbEntries *self) {
   char *line = NULL;
   size_t bufsize = 0;
+  unsigned int entry = 0;
   while (getline(&line, &bufsize, stream) > 0) {
     add_entry(self);
-    self->nextEntry = self->entries[self->numEntries-1];
-    populateEntryFromLine(line, self->nextEntry);
+    populateEntryFromLine(line, self->entries[entry++]);
   }
   free(line);
   return 0;
@@ -63,8 +63,12 @@ void sort_entries(dbEntries *self) {
   qsort((void *)self->entries, self->numEntries, sizeof(dbEntry *), (cmpfn)cmpfunc);
 }
 
+/*
 int main() {
-  FILE *data = fopen("./A4_ParallelSort/data/0", "r");
+  long myFile = 0;
+  char path[100];
+  sprintf(path, "./A4_ParallelSort/data/%ld", myFile);
+  FILE *data = fopen(path, "r");
   dbEntries *ents = dbEntries_init();
   read_file(data, ents);
   sort_entries(ents);
@@ -72,4 +76,5 @@ int main() {
   fclose(data);
   dbEntries_destroy(ents);
 }
+*/
 

@@ -1,8 +1,7 @@
 #include "dbEntry.h"
 #include <stdio.h>
-#include <string.h>
-#include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 dbEntry *dbEntry_init() {
   dbEntry *dbEnt = (dbEntry *)malloc(sizeof(dbEntry));
@@ -35,11 +34,12 @@ void writeToFile(FILE *output, dbEntry *self) {
 }
 
 void populateEntryFromLine(char *line, dbEntry *self) {
-  self->username = strdup(strtok(line, ","));
-  self->password = strdup(strtok(NULL, ","));
-  self->bloodtype = strdup(strtok(NULL, ","));
-  self->domain = strdup(strtok(NULL, ","));
-  self->index = atoi(strtok(NULL, "\n"));
+  char *saveptr;
+  self->username  = strdup(strtok_r(line, ",", &saveptr));
+  self->password  = strdup(strtok_r(NULL, ",", &saveptr));
+  self->bloodtype  = strdup(strtok_r(NULL, ",", &saveptr));
+  self->domain  = strdup(strtok_r(NULL, ",", &saveptr));
+  self->index     = atoi(strtok_r(NULL, "\n", &saveptr));
 }
 
 /*
