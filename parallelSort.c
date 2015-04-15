@@ -6,22 +6,23 @@
 #include <string.h>
 
 long numFiles = 9;
-dbEntries *files[9];
+dbEntries *files[9]; //global array that contains each threads srtd struct
 void *sort_files(void* file);
 
+//
+// each thread runs sort_files
+//
 void* sort_files(void *file) {
   long myFile = (long) file; 
   printf("hello from thread %ld\n", myFile);
   char path[100];
-  sprintf(path, "./A4_ParallelSort/data/%ld", myFile);
+  sprintf(path, "./data/%ld", myFile); //files in data/ and titled 0-numFiles
   FILE *data = fopen(path, "r");
   dbEntries *ents = dbEntries_init();
-  read_file(data, ents);
-  printf("hello again from thread %ld\n", myFile);
-  fflush(stdout);
-  sort_entries(ents);
-  files[myFile] = ents;
-  fclose(data);
+  read_file(data, ents); //read file into struct
+  sort_entries(ents); //sort struct
+  files[myFile] = ents; //add srtd struct to global array where main can access 
+  fclose(data); //close /data file
   return NULL;
 }
 
@@ -29,14 +30,14 @@ int merge_files(FILE *db) {
   unsigned int next = 1, max = 0; 
   dbEntry *next_entry;
   int i;
-  for (i=0; i<numFiles; i++) {
+  for (i=0; i<numFiles; i++) { //count total entries
     max += files[i]->numEntries;
   }
-  while (next <= max) {
-    for (i=0; i<numFiles; i++) {
+  while (next <= max) { //loop till we merge all entries
+    for (i=0; i<numFiles; i++) { //find and write next entry
       next_entry = files[i]->entries[files[i]->next];
-      if (next_entry->index == next) {
-        writeToFile(db, next_entry);
+      if (next_entry->index == next) { //next entry found
+        writeToFile(db, next_entry); //write
         if (files[i]->next < files[i]->numEntries-1) files[i]->next++;
       }
     }
@@ -53,24 +54,10 @@ int main() {
    pthread_create(&thread_handles[thread], NULL, sort_files, (void*)thread);
  for (thread=0; thread<numFiles; thread++)
    pthread_join(thread_handles[thread], NULL);
- //write_entries_to_file(stdout, files[8]);
  FILE *db = fopen("database", "w");
  merge_files(db);
  fclose(db);
  exit(EXIT_SUCCESS);
 
- /*
-    pthread_t threadA, threadB; // need to name the thread
-    int rc;
-    if ( (rc = pthread_create(&threadA , NULL, Thread, NULL)) )
-    {fprintf(stdout,"ERROR; return pthread_create()" );
-    exit(1); }
-    if ( (rc = pthread_create(&threadB , NULL, Thread, NULL)) )
-    {fprintf(stdout,"ERROR; return pthread_create()" );
-    exit(1); }
-    pthread_join(threadA, NULL);
-    pthread_join(threadB, NULL);
-    exit(EXIT_SUCCESS);
-    */
 }
 

@@ -30,6 +30,9 @@ void dbEntries_destroy(dbEntries *self) {
   free(self);
 }
 
+//
+// add entry and dynamically resize the dbEntry **
+//
 int add_entry(dbEntries *self) {
   if ((self->numEntries % 100) == 0) {
     self->entries = realloc(self->entries, (self->numEntries+100)*sizeof(dbEntry *));
@@ -41,6 +44,9 @@ error:
   return -1;
 }
 
+// 
+// readfile into struct
+//
 int read_file(FILE *stream, dbEntries *self) {
   char *line = NULL;
   size_t bufsize = 0;
@@ -53,6 +59,10 @@ int read_file(FILE *stream, dbEntries *self) {
   return 0;
 }
 
+//
+// write struct to file
+// this is just used for dbging
+//
 void write_entries_to_file(FILE *output, dbEntries *self) {
   for (unsigned int i=0; i<self->numEntries; i++) {
     writeToFile(output, self->entries[i]);
@@ -62,19 +72,4 @@ void write_entries_to_file(FILE *output, dbEntries *self) {
 void sort_entries(dbEntries *self) {
   qsort((void *)self->entries, self->numEntries, sizeof(dbEntry *), (cmpfn)cmpfunc);
 }
-
-/*
-int main() {
-  long myFile = 0;
-  char path[100];
-  sprintf(path, "./A4_ParallelSort/data/%ld", myFile);
-  FILE *data = fopen(path, "r");
-  dbEntries *ents = dbEntries_init();
-  read_file(data, ents);
-  sort_entries(ents);
-  write_entries_to_file(stdout, ents);
-  fclose(data);
-  dbEntries_destroy(ents);
-}
-*/
 
